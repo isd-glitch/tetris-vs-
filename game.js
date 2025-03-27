@@ -197,17 +197,18 @@ function updateUI() {
 document.addEventListener('keydown', handleKeyPress);
 
 function handleKeyPress(event) {
-    switch (event.key) {
-        case 'ArrowLeft': // 左矢印キーで左に移動
+    const key = event.key.toLowerCase(); // 小文字に変換して比較
+    switch (key) {
+        case 'arrowleft': // 左矢印キーで左に移動
             moveTetromino(-1);
             break;
-        case 'ArrowRight': // 右矢印キーで右に移動
+        case 'arrowright': // 右矢印キーで右に移動
             moveTetromino(1);
             break;
-        case 'ArrowDown': // 下矢印キーでソフトドロップ
+        case 'arrowdown': // 下矢印キーでソフトドロップ
             softDrop();
             break;
-        case 'ArrowUp': // 上矢印キーでハードドロップ
+        case 'arrowup': // 上矢印キーでハードドロップ
             hardDrop();
             break;
         case 'z': // zキーで左回転
@@ -265,11 +266,56 @@ function isTSpin() {
     return false; // 仮の値
 }
 
+function checkGameOver() {
+    // 一番上のラインにブロックがある場合、ゲームオーバー
+    if (board[0].some(cell => cell)) {
+        triggerGameOver();
+    }
+}
+
+function triggerGameOver() {
+    cancelAnimationFrame(gameLoopId); // ゲームループを停止
+    document.getElementById('game-over').classList.remove('hidden');
+}
+
+function resetGame() {
+    board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    score = 0;
+    lines = 0;
+    level = 1;
+    holdTetromino = null;
+    canHold = true;
+    nextTetrominos = [];
+    spawnTetromino();
+    document.getElementById('game-over').classList.add('hidden');
+    lastDropTime = Date.now();
+    gameLoop(); // ゲームループを再開
+}
+
+// イベントリスナーを追加
+document.getElementById('menu-button').addEventListener('click', () => {
+    window.location.href = 'menu.html';
+});
+
+document.getElementById('retry-button').addEventListener('click', resetGame);
+
+let gameLoopId;
+
+let dropInterval = 1000; // 自然落下の間隔（ミリ秒）
+let lastDropTime = Date.now();
+
 function gameLoop() {
+    const now = Date.now();
+    if (now - lastDropTime >= dropInterval) {
+        softDrop(); // 自然落下
+        lastDropTime = now;
+    }
+
     drawBoard();
     drawNextTetrominos();
     updateUI();
-    requestAnimationFrame(gameLoop);
+    checkGameOver(); // ゲームオーバー判定
+    gameLoopId = requestAnimationFrame(gameLoop);
 }
 
 spawnTetromino();
