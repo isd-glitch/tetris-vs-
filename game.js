@@ -132,17 +132,17 @@ function hardDrop() {
     placeTetromino();
 }
 
-function isCollision() {
+function isCollision(offset = { x: 0, y: 0 }) {
     return currentTetromino.shape.some((row, y) =>
         row.some((cell, x) => {
             if (cell) {
-                const newX = currentPosition.x + x;
-                const newY = currentPosition.y + y;
+                const newX = currentPosition.x + x + offset.x;
+                const newY = currentPosition.y + y + offset.y;
                 return (
-                    newX < 0 ||
-                    newX >= COLS ||
-                    newY >= ROWS ||
-                    (newY >= 0 && board[newY][newX])
+                    newX < 0 || // 左枠外
+                    newX >= COLS || // 右枠外
+                    newY >= ROWS || // 下枠外
+                    (newY >= 0 && board[newY][newX]) // 他のブロックと衝突
                 );
             }
             return false;
@@ -224,7 +224,7 @@ function handleKeyPress(event) {
 }
 
 function rotateTetromino(direction) {
-    const originalShape = currentTetromino.shape;
+    const originalShape = currentTetromino.shape.map(row => [...row]); // 元の形状を保存
     const size = originalShape.length;
 
     // 回転処理
@@ -240,7 +240,18 @@ function rotateTetromino(direction) {
     }
 
     currentTetromino.shape = newShape;
+
+    // 枠外に出た場合の補正
     if (isCollision()) {
+        for (let offset = 1; offset < size; offset++) {
+            if (!isCollision({ x: -offset, y: 0 })) {
+                currentPosition.x -= offset; // 左に補正
+                return;
+            } else if (!isCollision({ x: offset, y: 0 })) {
+                currentPosition.x += offset; // 右に補正
+                return;
+            }
+        }
         currentTetromino.shape = originalShape; // 衝突したら元に戻す
     }
 }
