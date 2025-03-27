@@ -61,7 +61,7 @@ function drawTetrominoPreview(tetromino, index) {
     nextCtx.fillStyle = tetromino.color;
     tetromino.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
-            if (cell) {
+            if (cell === 1) { // ブロックが存在する場合のみ描画
                 nextCtx.fillRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
                 nextCtx.strokeStyle = '#000';
                 nextCtx.strokeRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
@@ -76,7 +76,7 @@ function drawHoldTetromino() {
         holdCtx.fillStyle = holdTetromino.color;
         holdTetromino.shape.forEach((row, y) => {
             row.forEach((cell, x) => {
-                if (cell) {
+                if (cell === 1) { // ブロックが存在する場合のみ描画
                     holdCtx.fillRect(x * BLOCK_SIZE / 2, y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
                     holdCtx.strokeStyle = '#000';
                     holdCtx.strokeRect(x * BLOCK_SIZE / 2, y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
@@ -98,7 +98,7 @@ function drawTetromino() {
     ctx.fillStyle = currentTetromino.color;
     currentTetromino.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
-            if (cell) {
+            if (cell === 1) { // ブロックが存在する場合のみ描画
                 const drawX = (currentPosition.x + x) * BLOCK_SIZE;
                 const drawY = (currentPosition.y + y) * BLOCK_SIZE;
                 ctx.fillRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
@@ -241,14 +241,12 @@ function rotateTetromino(direction) {
 
     currentTetromino.shape = newShape;
 
-    // 枠外に出た場合の補正
+    // 衝突や枠外に出た場合の補正
     if (isCollision()) {
-        for (let offset = 1; offset < size; offset++) {
-            if (!isCollision({ x: -offset, y: 0 })) {
-                currentPosition.x -= offset; // 左に補正
-                return;
-            } else if (!isCollision({ x: offset, y: 0 })) {
-                currentPosition.x += offset; // 右に補正
+        const offsets = [0, -1, 1, -2, 2]; // 左右に補正するオフセット
+        for (let offset of offsets) {
+            if (!isCollision({ x: offset, y: 0 })) {
+                currentPosition.x += offset; // 衝突を回避するために補正
                 return;
             }
         }
