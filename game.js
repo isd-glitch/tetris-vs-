@@ -148,11 +148,13 @@ function drawHoldTetromino() {
 
 function spawnTetromino() {
     generateTetrominos();
+    const newTetromino = nextTetrominos.shift();
     currentTetromino = {
-        ...nextTetrominos.shift(),
-        shape: nextTetrominos[0].shape.map(row => [...row]) // 形状を複製
+        type: newTetromino.type,
+        color: newTetromino.color,
+        shape: newTetromino.shape.map(row => [...row])
     };
-    currentPosition = { x: 3, y: 0 }; // 初期位置
+    currentPosition = { x: 3, y: 0 };
     generateTetrominos();
     drawNextTetrominos();
 }
