@@ -25,7 +25,7 @@ let nextTetrominos = [];
 const tetrominoTypes = [
     { 
         type: 'I',
-        color: 'cyan',
+        color: '#00f0f0', // シアン（I型）
         shape: [
             [0, 0, 0, 0],
             [1, 1, 1, 1],
@@ -35,7 +35,7 @@ const tetrominoTypes = [
     },
     { 
         type: 'O',
-        color: 'yellow',
+        color: '#f0f000', // イエロー（O型）
         shape: [
             [0, 0, 0],
             [0, 1, 1],
@@ -44,7 +44,7 @@ const tetrominoTypes = [
     },
     { 
         type: 'T',
-        color: 'purple',
+        color: '#a000f0', // パープル（T型）
         shape: [
             [0, 0, 0],
             [0, 1, 0],
@@ -53,7 +53,7 @@ const tetrominoTypes = [
     },
     { 
         type: 'S',
-        color: 'green',
+        color: '#00f000', // グリーン（S型）
         shape: [
             [0, 0, 0],
             [0, 1, 1],
@@ -62,7 +62,7 @@ const tetrominoTypes = [
     },
     { 
         type: 'Z',
-        color: 'red',
+        color: '#f00000', // レッド（Z型）
         shape: [
             [0, 0, 0],
             [1, 1, 0],
@@ -71,7 +71,7 @@ const tetrominoTypes = [
     },
     { 
         type: 'J',
-        color: 'blue',
+        color: '#0000f0', // ブルー（J型）
         shape: [
             [0, 0, 0],
             [1, 0, 0],
@@ -80,7 +80,7 @@ const tetrominoTypes = [
     },
     { 
         type: 'L',
-        color: 'orange',
+        color: '#f0a000', // オレンジ（L型）
         shape: [
             [0, 0, 0],
             [0, 0, 1],
