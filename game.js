@@ -20,7 +20,7 @@ let holdTetromino = null;
 let canHold = true;
 
 let currentTetromino = null;
-let currentPosition = { x: 3, y: 0 };
+let currentPosition = { x: 3, y: 0 }; // 初期位置
 let nextTetrominos = [];
 const tetrominoTypes = [
     { type: 'I', color: 'cyan', shape: [[1, 1, 1, 1]] },
@@ -47,43 +47,25 @@ function generateTetrominos() {
     }
 }
 
-function spawnTetromino() {
-    generateTetrominos();
-    currentTetromino = nextTetrominos.shift();
-    currentPosition = { x: 3, y: 0 };
-    generateTetrominos();
-    drawNextTetrominos();
-}
-
-function drawTetromino() {
-    ctx.fillStyle = currentTetromino.color;
-    currentTetromino.shape.forEach((row, y) => {
-        row.forEach((cell, x) => {
-            if (cell) {
-                const drawX = (currentPosition.x + x) * BLOCK_SIZE;
-                const drawY = (currentPosition.y + y) * BLOCK_SIZE;
-                ctx.fillRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = '#000';
-                ctx.strokeRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
-            }
-        });
-    });
-}
-
 function drawNextTetrominos() {
     nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-    nextTetrominos.slice(0, 3).forEach((tetromino, index) => {
-        const xOffset = 10;
-        const yOffset = index * 100 + 10;
-        nextCtx.fillStyle = tetromino.color;
-        tetromino.shape.forEach((row, y) => {
-            row.forEach((cell, x) => {
-                if (cell) {
-                    nextCtx.fillRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
-                    nextCtx.strokeStyle = '#000';
-                    nextCtx.strokeRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
-                }
-            });
+    for (let i = 0; i < Math.min(3, nextTetrominos.length); i++) {
+        const tetromino = nextTetrominos[i];
+        drawTetrominoPreview(tetromino, i);
+    }
+}
+
+function drawTetrominoPreview(tetromino, index) {
+    const xOffset = 10;
+    const yOffset = index * 100 + 10;
+    nextCtx.fillStyle = tetromino.color;
+    tetromino.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (cell) {
+                nextCtx.fillRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+                nextCtx.strokeStyle = '#000';
+                nextCtx.strokeRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+            }
         });
     });
 }
@@ -104,34 +86,58 @@ function drawHoldTetromino() {
     }
 }
 
-function rotateTetromino(direction) {
-    const originalShape = currentTetromino.shape.map(row => [...row]);
-    const size = originalShape.length;
+function spawnTetromino() {
+    generateTetrominos();
+    currentTetromino = nextTetrominos.shift();
+    currentPosition = { x: 3, y: 0 }; // 初期位置
+    generateTetrominos();
+    drawNextTetrominos();
+}
 
-    const newShape = Array.from({ length: size }, () => Array(size).fill(0));
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            if (direction === 1) {
-                newShape[x][size - 1 - y] = originalShape[y][x];
-            } else {
-                newShape[size - 1 - x][y] = originalShape[y][x];
+function drawTetromino() {
+    ctx.fillStyle = currentTetromino.color;
+    currentTetromino.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (cell) {
+                const drawX = (currentPosition.x + x) * BLOCK_SIZE;
+                const drawY = (currentPosition.y + y) * BLOCK_SIZE;
+                ctx.fillRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeStyle = '#000';
+                ctx.strokeRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
             }
-        }
-    }
+        });
+    });
+}
 
-    currentTetromino.shape = newShape;
-
+function moveTetromino(direction) {
+    currentPosition.x += direction;
     if (isCollision()) {
-        currentTetromino.shape = originalShape;
+        currentPosition.x -= direction; // 衝突したら元に戻す
     }
 }
 
-function isCollision(offset = { x: 0, y: 0 }) {
+function softDrop() {
+    currentPosition.y++;
+    if (isCollision()) {
+        currentPosition.y--;
+        placeTetromino();
+    }
+}
+
+function hardDrop() {
+    while (!isCollision()) {
+        currentPosition.y++;
+    }
+    currentPosition.y--; // 衝突する直前に戻す
+    placeTetromino();
+}
+
+function isCollision() {
     return currentTetromino.shape.some((row, y) =>
         row.some((cell, x) => {
             if (cell) {
-                const newX = currentPosition.x + x + offset.x;
-                const newY = currentPosition.y + y + offset.y;
+                const newX = currentPosition.x + x;
+                const newY = currentPosition.y + y;
                 return (
                     newX < 0 ||
                     newX >= COLS ||
@@ -157,7 +163,7 @@ function placeTetromino() {
         });
     });
     clearLines();
-    canHold = true;
+    canHold = true; // ホールド可能にする
     spawnTetromino();
 }
 
@@ -166,37 +172,6 @@ function clearLines() {
     while (board.length < ROWS) {
         board.unshift(Array(COLS).fill(0));
     }
-}
-
-function softDrop() {
-    currentPosition.y++;
-    if (isCollision()) {
-        currentPosition.y--;
-        placeTetromino();
-    }
-}
-
-function hardDrop() {
-    while (!isCollision()) {
-        currentPosition.y++;
-    }
-    currentPosition.y--;
-    placeTetromino();
-}
-
-function holdCurrentTetromino() {
-    if (!canHold) return;
-    if (holdTetromino) {
-        const temp = holdTetromino;
-        holdTetromino = currentTetromino;
-        currentTetromino = temp;
-        currentPosition = { x: 3, y: 0 };
-    } else {
-        holdTetromino = currentTetromino;
-        spawnTetromino();
-    }
-    canHold = false;
-    drawHoldTetromino();
 }
 
 function drawBoard() {
@@ -219,36 +194,128 @@ function updateUI() {
     document.getElementById('level').textContent = `レベル: ${level}`;
 }
 
-document.addEventListener('keydown', event => {
-    switch (event.key.toLowerCase()) {
-        case 'arrowleft':
+document.addEventListener('keydown', handleKeyPress);
+
+function handleKeyPress(event) {
+    const key = event.key.toLowerCase(); // 小文字に変換して比較
+    switch (key) {
+        case 'arrowleft': // 左矢印キーで左に移動
             moveTetromino(-1);
             break;
-        case 'arrowright':
+        case 'arrowright': // 右矢印キーで右に移動
             moveTetromino(1);
             break;
-        case 'arrowdown':
+        case 'arrowdown': // 下矢印キーでソフトドロップ
             softDrop();
             break;
-        case 'arrowup':
+        case 'arrowup': // 上矢印キーでハードドロップ
             hardDrop();
             break;
-        case 'z':
+        case 'z': // zキーで左回転
             rotateTetromino(-1);
             break;
-        case 'x':
+        case 'x': // xキーで右回転
             rotateTetromino(1);
             break;
-        case 'c':
+        case 'c': // cキーでホールド
             holdCurrentTetromino();
             break;
     }
+}
+
+function rotateTetromino(direction) {
+    const originalShape = currentTetromino.shape;
+    const size = originalShape.length;
+
+    // 回転処理
+    const newShape = Array.from({ length: size }, () => Array(size).fill(0));
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            if (direction === 1) {
+                newShape[x][size - 1 - y] = originalShape[y][x]; // 右回転
+            } else {
+                newShape[size - 1 - x][y] = originalShape[y][x]; // 左回転
+            }
+        }
+    }
+
+    currentTetromino.shape = newShape;
+    if (isCollision()) {
+        currentTetromino.shape = originalShape; // 衝突したら元に戻す
+    }
+}
+
+function holdCurrentTetromino() {
+    if (!canHold) return;
+    if (holdTetromino) {
+        const temp = holdTetromino;
+        holdTetromino = currentTetromino;
+        currentTetromino = temp;
+        currentPosition = { x: 3, y: 0 }; // 初期位置に戻す
+    } else {
+        holdTetromino = currentTetromino;
+        spawnTetromino();
+    }
+    canHold = false;
+    drawHoldTetromino();
+}
+
+function isTSpin() {
+    // Tスピン判定ロジック
+    // ...Tスピン判定のコードを実装...
+    return false; // 仮の値
+}
+
+function checkGameOver() {
+    // 一番上のラインにブロックがある場合、ゲームオーバー
+    if (board[0].some(cell => cell)) {
+        triggerGameOver();
+    }
+}
+
+function triggerGameOver() {
+    cancelAnimationFrame(gameLoopId); // ゲームループを停止
+    document.getElementById('game-over').classList.remove('hidden');
+}
+
+function resetGame() {
+    board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    score = 0;
+    lines = 0;
+    level = 1;
+    holdTetromino = null;
+    canHold = true;
+    nextTetrominos = [];
+    spawnTetromino();
+    document.getElementById('game-over').classList.add('hidden');
+    lastDropTime = Date.now();
+    gameLoop(); // ゲームループを再開
+}
+
+// イベントリスナーを追加
+document.getElementById('menu-button').addEventListener('click', () => {
+    window.location.href = 'menu.html';
 });
 
+document.getElementById('retry-button').addEventListener('click', resetGame);
+
+let gameLoopId;
+
+let dropInterval = 1000; // 自然落下の間隔（ミリ秒）
+let lastDropTime = Date.now();
+
 function gameLoop() {
+    const now = Date.now();
+    if (now - lastDropTime >= dropInterval) {
+        softDrop(); // 自然落下
+        lastDropTime = now;
+    }
+
     drawBoard();
+    drawNextTetrominos();
     updateUI();
-    requestAnimationFrame(gameLoop);
+    checkGameOver(); // ゲームオーバー判定
+    gameLoopId = requestAnimationFrame(gameLoop);
 }
 
 spawnTetromino();
