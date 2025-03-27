@@ -1,0 +1,85 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+#game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#game-board {
+    background-color: #111;
+    border: 2px solid #fff;
+}
+
+#ui {
+    margin-top: 10px;
+    text-align: center;
+}
+
+#ui div {
+    margin: 5px 0;
+}
+
+#menu-container {
+    text-align: center;
+    color: #fff;
+}
+
+#menu-container h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+}
+
+#username-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#username-form input {
+    padding: 10px;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    border: 2px solid #fff;
+    border-radius: 5px;
+    background-color: #111;
+    color: #fff;
+}
+
+#username-form button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+}
+
+#username-form button:hover {
+    background-color: #0056b3;
+}
+
+#menu-buttons button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    margin: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+}
+
+#menu-buttons button:hover {
+    background-color: #0056b3;
+}

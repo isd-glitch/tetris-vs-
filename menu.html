@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テトリスvs! メニュー</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="menu-container">
+        <h1>ようこそ、<span id="username-display"></span>さん!</h1>
+        <div id="menu-buttons">
+            <button id="single-player-btn">シングルプレイ</button>
+            <button id="multi-player-btn">マルチプレイ</button>
+        </div>
+    </div>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get('username') || 'ゲスト';
+        document.getElementById('username-display').textContent = username;
+
+        document.getElementById('single-player-btn').addEventListener('click', () => {
+            window.location.href = 'single.html';
+        });
+
+        document.getElementById('multi-player-btn').addEventListener('click', () => {
+            alert('マルチプレイは現在準備中です！');
+        });
+    </script>
+</body>
+</html>
