@@ -148,26 +148,77 @@ function drawHoldTetromino() {
 
 function spawnTetromino() {
     generateTetrominos();
-    const newTetromino = nextTetrominos.shift();
+    const nextPiece = nextTetrominos.shift();
     currentTetromino = {
-        type: newTetromino.type,
-        color: newTetromino.color,
-        shape: newTetromino.shape.map(row => [...row])
+        type: nextPiece.type,
+        color: nextPiece.color,
+        shape: JSON.parse(JSON.stringify(nextPiece.shape)) // 完全なディープコピー
     };
     currentPosition = { x: 3, y: 0 };
+    
+    // 衝突判定（ゲームオーバーチェック）
+    if (isCollision()) {
+        triggerGameOver();
+        return;
+    }
+    
     generateTetrominos();
     drawNextTetrominos();
 }
 
+function getGhostPosition() {
+    const ghostPosition = { ...currentPosition };
+    while (!isCollision({ x: 0, y: 1, position: ghostPosition })) {
+        ghostPosition.y++;
+    }
+    return ghostPosition;
+}
+
+function isCollision(offset = { x: 0, y: 0 }, position = currentPosition) {
+    return currentTetromino.shape.some((row, y) =>
+        row.some((cell, x) => {
+            if (cell) {
+                const newX = position.x + x + offset.x;
+                const newY = position.y + y + offset.y;
+                return (
+                    newX < 0 ||
+                    newX >= COLS ||
+                    newY >= ROWS ||
+                    (newY >= 0 && board[newY][newX])
+                );
+            }
+            return false;
+        })
+    );
+}
+
 function drawTetromino() {
-    ctx.fillStyle = currentTetromino.color;
+    if (!currentTetromino) return;
+    
+    // ゴーストミノの描画
+    const ghostPosition = getGhostPosition();
+    ctx.fillStyle = 'rgba(128, 128, 128, 0.3)'; // 半透明のグレー
+    ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
     currentTetromino.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
-            if (cell) { // ブロックが存在する場合のみ描画
+            if (cell) {
+                const drawX = (ghostPosition.x + x) * BLOCK_SIZE;
+                const drawY = (ghostPosition.y + y) * BLOCK_SIZE;
+                ctx.fillRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
+            }
+        });
+    });
+
+    // 実際のテトリミノの描画
+    ctx.fillStyle = currentTetromino.color;
+    ctx.strokeStyle = '#000';
+    currentTetromino.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (cell) {
                 const drawX = (currentPosition.x + x) * BLOCK_SIZE;
                 const drawY = (currentPosition.y + y) * BLOCK_SIZE;
                 ctx.fillRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
-                ctx.strokeStyle = '#000';
                 ctx.strokeRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
             }
         });
@@ -216,24 +267,6 @@ function hardDrop() {
     }
     currentPosition.y--; // 衝突する直前に戻す
     placeTetromino();
-}
-
-function isCollision(offset = { x: 0, y: 0 }) {
-    return currentTetromino.shape.some((row, y) =>
-        row.some((cell, x) => {
-            if (cell) {
-                const newX = currentPosition.x + x + offset.x;
-                const newY = currentPosition.y + y + offset.y;
-                return (
-                    newX < 0 || // 左枠外
-                    newX >= COLS || // 右枠外
-                    newY >= ROWS || // 下枠外
-                    (newY >= 0 && board[newY][newX]) // 他のブロックと衝突
-                );
-            }
-            return false;
-        })
-    );
 }
 
 function placeTetromino() {
@@ -416,16 +449,30 @@ function rotateTetromino(direction) {
 }
 
 function holdCurrentTetromino() {
-    if (!canHold) return;
+    if (!canHold || !currentTetromino) return;
+    
     if (holdTetromino) {
-        const temp = holdTetromino;
-        holdTetromino = currentTetromino;
+        const temp = {
+            type: holdTetromino.type,
+            color: holdTetromino.color,
+            shape: JSON.parse(JSON.stringify(holdTetromino.shape))
+        };
+        holdTetromino = {
+            type: currentTetromino.type,
+            color: currentTetromino.color,
+            shape: JSON.parse(JSON.stringify(currentTetromino.shape))
+        };
         currentTetromino = temp;
-        currentPosition = { x: 3, y: 0 }; // 初期位置に戻す
+        currentPosition = { x: 3, y: 0 };
     } else {
-        holdTetromino = currentTetromino;
+        holdTetromino = {
+            type: currentTetromino.type,
+            color: currentTetromino.color,
+            shape: JSON.parse(JSON.stringify(currentTetromino.shape))
+        };
         spawnTetromino();
     }
+    
     canHold = false;
     drawHoldTetromino();
 }
