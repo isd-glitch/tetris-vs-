@@ -13,6 +13,12 @@ let level = 1;
 const nextCanvas = document.getElementById('next-board');
 const nextCtx = nextCanvas.getContext('2d');
 
+const holdCanvas = document.getElementById('hold-board');
+const holdCtx = holdCanvas.getContext('2d');
+
+let holdTetromino = null;
+let canHold = true;
+
 let currentTetromino = null;
 let currentPosition = { x: 3, y: 0 }; // 初期位置
 let nextTetrominos = [];
@@ -62,6 +68,22 @@ function drawTetrominoPreview(tetromino, index) {
             }
         });
     });
+}
+
+function drawHoldTetromino() {
+    holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+    if (holdTetromino) {
+        holdCtx.fillStyle = holdTetromino.color;
+        holdTetromino.shape.forEach((row, y) => {
+            row.forEach((cell, x) => {
+                if (cell) {
+                    holdCtx.fillRect(x * BLOCK_SIZE / 2, y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+                    holdCtx.strokeStyle = '#000';
+                    holdCtx.strokeRect(x * BLOCK_SIZE / 2, y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+                }
+            });
+        });
+    }
 }
 
 function spawnTetromino() {
@@ -141,6 +163,7 @@ function placeTetromino() {
         });
     });
     clearLines();
+    canHold = true; // ホールド可能にする
     spawnTetromino();
 }
 
@@ -193,23 +216,47 @@ function handleKeyPress(event) {
         case 'x': // xキーで右回転
             rotateTetromino(1);
             break;
+        case 'c': // cキーでホールド
+            holdCurrentTetromino();
+            break;
     }
 }
 
 function rotateTetromino(direction) {
-    // テトリミノを回転
-    // directionが-1なら左回転、1なら右回転
-    // Tスピン判定を追加
-    const originalState = JSON.stringify(currentTetromino);
-    currentTetromino.rotate(direction);
+    const originalShape = currentTetromino.shape;
+    const size = originalShape.length;
 
-    if (isCollision()) {
-        currentTetromino = JSON.parse(originalState); // 回転を元に戻す
-        if (isTSpin()) {
-            console.log('Tスピン成功!');
-            // Tスピンのスコア加算ロジックを追加
+    // 回転処理
+    const newShape = Array.from({ length: size }, () => Array(size).fill(0));
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            if (direction === 1) {
+                newShape[x][size - 1 - y] = originalShape[y][x]; // 右回転
+            } else {
+                newShape[size - 1 - x][y] = originalShape[y][x]; // 左回転
+            }
         }
     }
+
+    currentTetromino.shape = newShape;
+    if (isCollision()) {
+        currentTetromino.shape = originalShape; // 衝突したら元に戻す
+    }
+}
+
+function holdCurrentTetromino() {
+    if (!canHold) return;
+    if (holdTetromino) {
+        const temp = holdTetromino;
+        holdTetromino = currentTetromino;
+        currentTetromino = temp;
+        currentPosition = { x: 3, y: 0 }; // 初期位置に戻す
+    } else {
+        holdTetromino = currentTetromino;
+        spawnTetromino();
+    }
+    canHold = false;
+    drawHoldTetromino();
 }
 
 function isTSpin() {
