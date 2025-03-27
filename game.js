@@ -37,53 +37,54 @@ const tetrominoTypes = [
         type: 'O',
         color: 'yellow',
         shape: [
-            [1, 1],
-            [1, 1]
+            [0, 0, 0],
+            [0, 1, 1],
+            [0, 1, 1]
         ]
     },
     { 
         type: 'T',
         color: 'purple',
         shape: [
+            [0, 0, 0],
             [0, 1, 0],
-            [1, 1, 1],
-            [0, 0, 0]
+            [1, 1, 1]
         ]
     },
     { 
         type: 'S',
         color: 'green',
         shape: [
+            [0, 0, 0],
             [0, 1, 1],
-            [1, 1, 0],
-            [0, 0, 0]
+            [1, 1, 0]
         ]
     },
     { 
         type: 'Z',
         color: 'red',
         shape: [
+            [0, 0, 0],
             [1, 1, 0],
-            [0, 1, 1],
-            [0, 0, 0]
+            [0, 1, 1]
         ]
     },
     { 
         type: 'J',
         color: 'blue',
         shape: [
+            [0, 0, 0],
             [1, 0, 0],
-            [1, 1, 1],
-            [0, 0, 0]
+            [1, 1, 1]
         ]
     },
     { 
         type: 'L',
         color: 'orange',
         shape: [
+            [0, 0, 0],
             [0, 0, 1],
-            [1, 1, 1],
-            [0, 0, 0]
+            [1, 1, 1]
         ]
     }
 ];
@@ -97,6 +98,7 @@ function shuffle(array) {
 }
 
 function generateTetrominos() {
+    // 七種一巡の法則: バッグが7個未満になったら新しいバッグを追加
     if (nextTetrominos.length < 7) {
         const newBag = shuffle([...tetrominoTypes]);
         nextTetrominos.push(...newBag);
@@ -105,7 +107,8 @@ function generateTetrominos() {
 
 function drawNextTetrominos() {
     nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-    for (let i = 0; i < Math.min(3, nextTetrominos.length); i++) {
+    // ネクストを5個表示に変更
+    for (let i = 0; i < Math.min(5, nextTetrominos.length); i++) {
         const tetromino = nextTetrominos[i];
         drawTetrominoPreview(tetromino, i);
     }
@@ -113,7 +116,8 @@ function drawNextTetrominos() {
 
 function drawTetrominoPreview(tetromino, index) {
     const xOffset = 10;
-    const yOffset = index * 100 + 10;
+    // 表示間隔を調整
+    const yOffset = index * 60 + 10;
     nextCtx.fillStyle = tetromino.color;
     tetromino.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
@@ -144,7 +148,10 @@ function drawHoldTetromino() {
 
 function spawnTetromino() {
     generateTetrominos();
-    currentTetromino = nextTetrominos.shift();
+    currentTetromino = {
+        ...nextTetrominos.shift(),
+        shape: nextTetrominos[0].shape.map(row => [...row]) // 形状を複製
+    };
     currentPosition = { x: 3, y: 0 }; // 初期位置
     generateTetrominos();
     drawNextTetrominos();
@@ -165,18 +172,39 @@ function drawTetromino() {
     });
 }
 
-function moveTetromino(direction) {
-    currentPosition.x += direction;
-    if (isCollision()) {
-        currentPosition.x -= direction; // 衝突したら元に戻す
-    }
-}
+const LOCK_DELAY = 1000; // ロックダウン遅延時間（ミリ秒）
+let lockDelayTimer = null;
 
 function softDrop() {
     currentPosition.y++;
     if (isCollision()) {
         currentPosition.y--;
-        placeTetromino();
+        startLockDelay();
+    }
+}
+
+function startLockDelay() {
+    if (lockDelayTimer === null) {
+        lockDelayTimer = setTimeout(() => {
+            placeTetromino();
+            lockDelayTimer = null;
+        }, LOCK_DELAY);
+    }
+}
+
+function resetLockDelay() {
+    if (lockDelayTimer !== null) {
+        clearTimeout(lockDelayTimer);
+        lockDelayTimer = null;
+    }
+}
+
+function moveTetromino(direction) {
+    currentPosition.x += direction;
+    if (isCollision()) {
+        currentPosition.x -= direction; // 衝突したら元に戻す
+    } else {
+        resetLockDelay(); // 移動に成功したらロックダウン遅延をリセット
     }
 }
 
@@ -223,8 +251,56 @@ function placeTetromino() {
     spawnTetromino();
 }
 
+function checkTSpin() {
+    if (currentTetromino.type !== 'T') return false;
+
+    let corners = 0;
+    const positions = [
+        { x: -1, y: -1 }, { x: 1, y: -1 },
+        { x: -1, y: 1 }, { x: 1, y: 1 }
+    ];
+
+    positions.forEach(pos => {
+        const checkX = currentPosition.x + pos.x;
+        const checkY = currentPosition.y + pos.y;
+        
+        if (checkX < 0 || checkX >= COLS || 
+            checkY >= ROWS || 
+            (checkY >= 0 && board[checkY][checkX])) {
+            corners++;
+        }
+    });
+
+    return corners >= 3;
+}
+
 function clearLines() {
-    board = board.filter(row => row.some(cell => !cell));
+    let linesCleared = 0;
+    const isTSpin = checkTSpin();
+
+    board = board.filter(row => {
+        if (row.every(cell => cell)) {
+            linesCleared++;
+            return false;
+        }
+        return true;
+    });
+
+    // スコア計算
+    if (linesCleared > 0) {
+        const basePoints = [0, 100, 300, 500, 800][linesCleared];
+        let bonus = 1;
+        
+        if (isTSpin) {
+            bonus = 2;
+            console.log('T-Spin!');
+        }
+
+        score += basePoints * bonus * level;
+        lines += linesCleared;
+        level = Math.floor(lines / 10) + 1;
+    }
+
     while (board.length < ROWS) {
         board.unshift(Array(COLS).fill(0));
     }
@@ -309,7 +385,7 @@ function rotateTetromino(direction) {
             { x: 1, y: 0 },  // 右
             { x: 0, y: -1 }, // 上
             { x: -2, y: 0 }, // 左2
-            { x: 2, y: 0 },  // 右2
+            { x: 2, y: 0 }   // 右2
         ];
 
         // 補正位置を試す
@@ -319,6 +395,10 @@ function rotateTetromino(direction) {
             currentPosition.y += offset.y;
             if (!isCollision()) {
                 rotationSucceeded = true;
+                if (currentTetromino.type === 'T') {
+                    checkTSpin();
+                }
+                resetLockDelay(); // 回転に成功したらロックダウン遅延をリセット
                 break;
             }
             currentPosition.x -= offset.x;
