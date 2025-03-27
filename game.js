@@ -23,13 +23,69 @@ let currentTetromino = null;
 let currentPosition = { x: 3, y: 0 }; // 初期位置
 let nextTetrominos = [];
 const tetrominoTypes = [
-    { type: 'I', color: 'cyan', shape: [[1, 1, 1, 1]] },
-    { type: 'O', color: 'yellow', shape: [[1, 1], [1, 1]] },
-    { type: 'T', color: 'purple', shape: [[0, 1, 0], [1, 1, 1]] },
-    { type: 'S', color: 'green', shape: [[0, 1, 1], [1, 1, 0]] },
-    { type: 'Z', color: 'red', shape: [[1, 1, 0], [0, 1, 1]] },
-    { type: 'J', color: 'blue', shape: [[1, 0, 0], [1, 1, 1]] },
-    { type: 'L', color: 'orange', shape: [[0, 0, 1], [1, 1, 1]] },
+    { 
+        type: 'I',
+        color: 'cyan',
+        shape: [
+            [0, 0, 0, 0],
+            [1, 1, 1, 1],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ]
+    },
+    { 
+        type: 'O',
+        color: 'yellow',
+        shape: [
+            [1, 1],
+            [1, 1]
+        ]
+    },
+    { 
+        type: 'T',
+        color: 'purple',
+        shape: [
+            [0, 1, 0],
+            [1, 1, 1],
+            [0, 0, 0]
+        ]
+    },
+    { 
+        type: 'S',
+        color: 'green',
+        shape: [
+            [0, 1, 1],
+            [1, 1, 0],
+            [0, 0, 0]
+        ]
+    },
+    { 
+        type: 'Z',
+        color: 'red',
+        shape: [
+            [1, 1, 0],
+            [0, 1, 1],
+            [0, 0, 0]
+        ]
+    },
+    { 
+        type: 'J',
+        color: 'blue',
+        shape: [
+            [1, 0, 0],
+            [1, 1, 1],
+            [0, 0, 0]
+        ]
+    },
+    { 
+        type: 'L',
+        color: 'orange',
+        shape: [
+            [0, 0, 1],
+            [1, 1, 1],
+            [0, 0, 0]
+        ]
+    }
 ];
 
 function shuffle(array) {
@@ -98,7 +154,7 @@ function drawTetromino() {
     ctx.fillStyle = currentTetromino.color;
     currentTetromino.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
-            if (cell) {
+            if (cell) { // ブロックが存在する場合のみ描画
                 const drawX = (currentPosition.x + x) * BLOCK_SIZE;
                 const drawY = (currentPosition.y + y) * BLOCK_SIZE;
                 ctx.fillRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
@@ -224,26 +280,56 @@ function handleKeyPress(event) {
 }
 
 function rotateTetromino(direction) {
-    const originalShape = currentTetromino.shape.map(row => [...row]); // 元の形状を保存
+    const originalShape = currentTetromino.shape.map(row => [...row]);
     const size = originalShape.length;
+    const newShape = Array.from({ length: size }, () => Array(size).fill(0));
 
     // 回転処理
-    const newShape = Array.from({ length: size }, () => Array(size).fill(0));
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
             if (direction === 1) {
-                newShape[x][size - 1 - y] = originalShape[y][x]; // 右回転
+                // 右回転（時計回り）
+                newShape[x][size - 1 - y] = originalShape[y][x];
             } else {
-                newShape[size - 1 - x][y] = originalShape[y][x]; // 左回転
+                // 左回転（反時計回り）
+                newShape[size - 1 - x][y] = originalShape[y][x];
             }
         }
     }
 
+    // 衝突チェックと補正
+    const originalPosition = { ...currentPosition };
     currentTetromino.shape = newShape;
 
-    // 衝突や枠外に出た場合の補正
+    // 衝突する場合は位置を補正
     if (isCollision()) {
-        currentTetromino.shape = originalShape; // 衝突したら元に戻す
+        const offsets = [
+            { x: 0, y: 0 },  // そのまま
+            { x: -1, y: 0 }, // 左
+            { x: 1, y: 0 },  // 右
+            { x: 0, y: -1 }, // 上
+            { x: -2, y: 0 }, // 左2
+            { x: 2, y: 0 },  // 右2
+        ];
+
+        // 補正位置を試す
+        let rotationSucceeded = false;
+        for (const offset of offsets) {
+            currentPosition.x += offset.x;
+            currentPosition.y += offset.y;
+            if (!isCollision()) {
+                rotationSucceeded = true;
+                break;
+            }
+            currentPosition.x -= offset.x;
+            currentPosition.y -= offset.y;
+        }
+
+        // 補正が失敗した場合は元に戻す
+        if (!rotationSucceeded) {
+            currentTetromino.shape = originalShape;
+            currentPosition = originalPosition;
+        }
     }
 }
 
