@@ -11,8 +11,9 @@ body {
 
 #game-container {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 20px;
 }
 
 #game-board {
@@ -82,4 +83,17 @@ body {
 
 #menu-buttons button:hover {
     background-color: #0056b3;
+}
+
+#next-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #fff;
+}
+
+#next-board {
+    background-color: #111;
+    border: 2px solid #fff;
+    margin-top: 10px;
 }
