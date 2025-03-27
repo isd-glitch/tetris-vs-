@@ -50,13 +50,14 @@ function drawNextTetrominos() {
 }
 
 function drawTetrominoPreview(tetromino, index) {
-    const xOffset = 20;
-    const yOffset = index * 100 + 20;
+    const xOffset = 10;
+    const yOffset = index * 100 + 10;
     nextCtx.fillStyle = tetromino.color;
     tetromino.shape.forEach((row, y) => {
         row.forEach((cell, x) => {
             if (cell) {
                 nextCtx.fillRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
+                nextCtx.strokeStyle = '#000';
                 nextCtx.strokeRect(xOffset + x * BLOCK_SIZE / 2, yOffset + y * BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
             }
         });
@@ -79,6 +80,7 @@ function drawTetromino() {
                 const drawX = (currentPosition.x + x) * BLOCK_SIZE;
                 const drawY = (currentPosition.y + y) * BLOCK_SIZE;
                 ctx.fillRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeStyle = '#000';
                 ctx.strokeRect(drawX, drawY, BLOCK_SIZE, BLOCK_SIZE);
             }
         });
